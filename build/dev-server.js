@@ -6,6 +6,9 @@ if (!process.env.NODE_ENV) {
   process.env.NODE_ENV = JSON.parse(config.dev.env.NODE_ENV)
 }
 
+const http = require('http')
+const https = require('https')
+
 const opn = require('opn')
 const path = require('path')
 const express = require('express')
@@ -46,6 +49,41 @@ const hotMiddleware = require('webpack-hot-middleware')(compiler, {
 // enable hot-reload and state-preserving
 // compilation error display
 app.use(hotMiddleware)
+
+function repostGet (url, req, res) {
+  let queryStr = req.originalUrl.split('?')[1];
+  url = url + '?' + queryStr;
+  let options = {
+    protocol: 'https:',
+    host: 'c.y.qq.com',
+    headers: {
+      referer: 'https://y.qq.com/portal/playlist.html',
+    },
+    path: url
+  }
+  https.get(options, (response) => {
+    let rawData = '';
+    response.on('data', (chunk) => {
+      rawData += chunk;
+    });
+    response.on('end', () => {
+      res.end(rawData);
+    });
+    response.on('error', () => {
+      console.log(e);
+    })
+  })  
+}
+
+app.get('/api/getrecommend', function(req, res) {
+  let url = '/musichall/fcgi-bin/fcg_yqqhomepagerecommend.fcg';
+  repostGet(url, req, res);
+});
+
+app.get('/api/getplaylist', function(req, res) {
+  let url = '/splcloud/fcgi-bin/fcg_get_diss_by_tag.fcg';
+  repostGet(url, req, res);
+})
 
 // proxy api requests
 Object.keys(proxyTable).forEach(function (context) {
